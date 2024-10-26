@@ -1,58 +1,47 @@
 import labelbox as lb
 from dotenv import load_dotenv
 import os
+import glob
 
 # Load environment variables from .env file
 load_dotenv()
+print("Environment variables loaded.")
 
 # Initialize the Labelbox client with the API key from the environment
 client = lb.Client(api_key=os.getenv("LABELBOX_API_KEY"))
+print("Labelbox client initialized.")
 
 # Create a new dataset
-dataset = client.create_dataset(name="Shoplifting Detection Dataset")
+dataset = client.create_dataset(name="Shoplifting Dataset")
+print("Dataset created.")
 
-# Create data payload for normal shopping videos
-normal_assets = [
-    {
-        "row_data": "https://your-url.com/path/to/normal_video_1.mp4",
-        "global_key": "normal-video-0001",
-        "media_type": "VIDEO",
-        "metadata_fields": [{"schema_id": "your_schema_id", "value": "normal shopping"}],
-    },
-    {
-        "row_data": "https://your-url.com/path/to/normal_video_2.mp4",
-        "global_key": "normal-video-0002",
-        "media_type": "VIDEO",
-        "metadata_fields": [{"schema_id": "your_schema_id", "value": "normal shopping"}],
-    },
-    # Add more normal videos as needed
-]
+# Define the schema ID
+schema_id = "correct_schema_id_here"  # Replace with the correct schema ID
+print(f"Using schema ID: {schema_id}")
 
 # Create data payload for shoplifting videos
-shoplifting_assets = [
-    {
-        "row_data": "https://your-url.com/path/to/shoplifting_video_1.mp4",
-        "global_key": "shoplifting-video-0001",
+shoplifting_assets = []
+for video_path in glob.glob("archive/Shoplifting dataset/Shoplifting/*.mp4"):
+    global_key = os.path.basename(video_path).replace('.mp4', '')
+    shoplifting_assets.append({
+        "row_data": video_path,
+        "global_key": global_key,
         "media_type": "VIDEO",
-        "metadata_fields": [{"schema_id": "your_schema_id", "value": "shoplifting"}],
-    },
-    {
-        "row_data": "https://your-url.com/path/to/shoplifting_video_2.mp4",
-        "global_key": "shoplifting-video-0002",
-        "media_type": "VIDEO",
-        "metadata_fields": [{"schema_id": "your_schema_id", "value": "shoplifting"}],
-    },
-    # Add more shoplifting videos as needed
-]
-
-# Combine both asset lists
-assets = normal_assets + shoplifting_assets
+        "metadata_fields": [{"schema_id": schema_id, "value": "shoplifting"}],
+    })
+print(f"Shoplifting assets prepared: {len(shoplifting_assets)}")
 
 # Bulk add data rows to the dataset
-task = dataset.create_data_rows(assets)
+task = dataset.create_data_rows(shoplifting_assets)
+print("Data rows creation task started.")
 
 # Wait for the task to complete
 task.wait_till_done()
+print("Data rows creation task completed.")
 
 # Print any errors that occurred during the upload
-print(task.errors)
+if task.errors:
+    print("Errors occurred during upload:")
+    print(task.errors)
+else:
+    print("All assets uploaded successfully.")
